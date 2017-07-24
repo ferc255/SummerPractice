@@ -234,14 +234,14 @@ def main():
     read(table, attributes)
     #print(table, attributes, sep='\n\n')
 
-    if len(sys.argv) < 2 or sys.argv[1][0] != 'c':
+    if len(sys.argv) < 2 or len(sys.argv[1]) < 2 or sys.argv[1][:2] != '-c':
         tree = []
         node = [None,]
         C45(table, attributes, tree, node, 0)
         print_results(node, tree)
         first = calc_used_attributes(node, attributes)
 
-    if len(sys.argv) < 2 or sys.argv[1][0] != 's':
+    if len(sys.argv) < 2 or len(sys.argv[1]) < 2 or sys.argv[1][:2] != '-s':
         level = [{'table': table, 'index': 0,},]
         tree = [[],]
         node = [None,]
@@ -249,7 +249,8 @@ def main():
         print_results(node, tree)
         second = calc_used_attributes(node, attributes)
 
-    if len(sys.argv) < 2 or not sys.argv[1][0] in ['s', 'c']:
+    if len(sys.argv) < 2 or len(sys.argv[1]) < 2 or \
+       not sys.argv[1][:2] in ['-s', '-c']:
         print(first, second)
     
 
