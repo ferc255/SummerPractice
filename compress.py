@@ -45,7 +45,7 @@ def get_dict_num(table, column, divider):
     lot = {}
     freq = {}
     for i, row in enumerate(table):
-        relation = 'less' if int(row[column]) < int(divider) else 'greater'
+        relation = 'less' if float(row[column]) < float(divider) else 'greater'
         
         if not(relation in lot):
             lot[relation] = {}
@@ -94,8 +94,6 @@ def calc_gain_ratio(table, column, divider, info):
         gain_ratio /= split_info
         #pass
 
-    #print(table)
-    #print(column, divider, gain_ratio)
     return gain_ratio
     
 
@@ -143,7 +141,6 @@ def C45_compress(level, attributes, tree, node):
                             get_best_division(level, column, gain_sum,
                                     best_column, best_divider, row[column])
 
-
         new_level = []
         for pair in level:
             if best_divider == STRING:
@@ -151,22 +148,17 @@ def C45_compress(level, attributes, tree, node):
                 lot, freq = get_dict_str(pair['table'], best_column)        
             else:
                 node[pair['index']] = attributes[best_column] + " " + \
-                                   str(best_divider)
+                                   str(round(float(best_divider), 2))
                 lot, freq = get_dict_num(pair['table'], best_column, best_divider)
 
-            #print(lot, freq, sep='\n')
             for key in freq:
                 new_table = []
                 for item in freq[key]:
                     new_table.append(pair['table'][item])
 
-                #print(new_table)
                 node.append(None)
                 tree.append([])
                 tree[pair['index']].append((len(node) - 1, key))
-                print(key)
-                print(tree)
-                print(len(node))
                 if Info(new_table) != 0:
                     new_level.append(\
                         {
@@ -176,54 +168,26 @@ def C45_compress(level, attributes, tree, node):
                 else:
                     node[-1] = new_table[0][-1]
 
-        print(new_level)
-        print(node)
         level = new_level
-        #print(tree)
-        exit()
 
 
+def print_results(node, tree):
+    for i in range(len(node)):
+        print(i, '=', node[i])
+    print()
+
+    for i in range(len(tree)):
+        print(i, '|', tree[i])
+    print()
 
 
-def C45(table, attributes, tree, node, idx):
-    tree.append([])
-    info = Info(table)
-    if info == 0:
-        node[idx] = table[0][-1]
-        return
-
-    best_ratio = -1
-    best_column = -1
-    best_divider = -1
-    for column in range(len(attributes) - 1):
-        if not(table[0][column].isnumeric()):
-            best_ratio, best_column, best_divider = \
-                update_best_ratio(table, column, info, best_ratio,
-                                  best_column, best_divider, STRING)
-        else:
-            for row in table:
-                best_ratio, best_column, best_divider = \
-                    update_best_ratio(table, column, info, best_ratio,
-                                      best_column, best_divider, row[column])
-
-    if best_divider == STRING:
-        node[idx] = attributes[best_column]
-        lot, freq = get_dict_str(table, best_column)        
-    else:
-        node[idx] = attributes[best_column] + " " + str(best_divider)
-        lot, freq = get_dict_num(table, best_column, best_divider)
-
-    for key in freq:
-        new_table = []
-        for item in freq[key]:
-            new_table.append(table[item])
-            
-        node.append(None)
-        tree[idx].append((len(node) - 1, key))
-        C45(new_table, attributes, tree, node, len(node) - 1)
-
-
-        
+def calc_used_attributes(node, attributes):
+    result = set([])
+    for item in node:
+        if item.split()[0] in attributes:
+            result.add(item)
+    return len(result)
+    
         
 def main():
     table = []
@@ -233,17 +197,12 @@ def main():
 
     level = [{'table': table, 'index': 0,},]
 
-    tree = []
+    tree = [[],]
     node = [None,]
     C45_compress(level, attributes, tree, node)
 
-    for i in range(len(node)):
-        print(i, '=', node[i])
-    print()
-
-    for i in range(len(tree)):
-        print(i, '|', tree[i])
-    print()
+    print_results(node, tree)
+    print(calc_used_attributes(node, attributes))
     
 
 if __name__ == "__main__":

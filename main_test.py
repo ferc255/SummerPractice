@@ -22,7 +22,6 @@ def entropy(lot, total):
         
         
 def Info(table):
-    #print(table)
     lot = {}
     for row in table:
         if not(row[-1] in lot):
@@ -88,13 +87,19 @@ def Info_x(table, column, divider):
     return calc_infos(lot, freq, len(table))
 
 
-def update_best_ratio(table, column, info, best_ratio, best_column,
-                      best_divider, divider):
+def calc_gain_ratio(table, column, divider, info):
     info_x, split_info = Info_x(table, column, divider)
     gain_ratio = info - info_x
     if split_info != 0:
         gain_ratio /= split_info
         #pass
+
+    return gain_ratio
+
+
+def update_best_ratio(table, column, info, best_ratio, best_column,
+                      best_divider, divider):
+    gain_ratio = calc_gain_ratio(table, column, divider, info)
 
     if gain_ratio > best_ratio:
         best_ratio = gain_ratio
@@ -143,6 +148,68 @@ def C45(table, attributes, tree, node, idx):
         C45(new_table, attributes, tree, node, len(node) - 1)
 
 
+def get_best_division(level, column, gain_sum, best_column,
+                      best_divider, divider):
+    result_sum = 0
+    for pair in level:
+        info = Info(pair['table'])
+        result_sum += calc_gain_ratio(pair['table'], column, divider, info)
+
+    if result_sum > gain_sum:
+        gain_sum = result_sum
+        best_column = column
+        best_divider = divider
+
+    return gain_sum, best_column, best_divider
+
+
+def C45_compress(level, attributes, tree, node):
+    while len(level) > 0:
+        gain_sum = -1
+        best_column = -1
+        best_divider = -1
+        for column in range(len(attributes) - 1):
+            if not level[0]['table'][0][column].isnumeric():
+                gain_sum, best_column, best_divider = \
+                    get_best_division(level, column, gain_sum,
+                                    best_column, best_divider, STRING)
+            else:
+                for pair in level:
+                    for row in pair['table']:
+                        gain_sum, best_column, best_divider = \
+                            get_best_division(level, column, gain_sum,
+                                    best_column, best_divider, row[column])
+
+        new_level = []
+        for pair in level:
+            if best_divider == STRING:
+                node[pair['index']] = attributes[best_column]
+                lot, freq = get_dict_str(pair['table'], best_column)        
+            else:
+                node[pair['index']] = attributes[best_column] + " " + \
+                                   str(round(float(best_divider), 2))
+                lot, freq = get_dict_num(pair['table'], best_column, best_divider)
+
+            for key in freq:
+                new_table = []
+                for item in freq[key]:
+                    new_table.append(pair['table'][item])
+
+                node.append(None)
+                tree.append([])
+                tree[pair['index']].append((len(node) - 1, key))
+                if Info(new_table) != 0:
+                    new_level.append(\
+                        {
+                            'table': new_table,
+                            'index': len(node) - 1,
+                        });
+                else:
+                    node[-1] = new_table[0][-1]
+
+        level = new_level
+
+
 def print_results(node, tree):
     for i in range(len(node)):
         print(i, '=', node[i])
@@ -167,12 +234,24 @@ def main():
     read(table, attributes)
     #print(table, attributes, sep='\n\n')
 
-    tree = []
-    node = [None,]
-    C45(table, attributes, tree, node, 0)
+    if len(sys.argv) < 2 or sys.argv[1][0] != 'c':
+        tree = []
+        node = [None,]
+        C45(table, attributes, tree, node, 0)
+        print_results(node, tree)
+        first = calc_used_attributes(node, attributes)
 
-    print_results(node, tree)
-    print(calc_used_attributes(node, attributes))
+    if len(sys.argv) < 2 or sys.argv[1][0] != 's':
+        level = [{'table': table, 'index': 0,},]
+        tree = [[],]
+        node = [None,]
+        C45_compress(level, attributes, tree, node)
+        print_results(node, tree)
+        second = calc_used_attributes(node, attributes)
+
+    if len(sys.argv) < 2 or not sys.argv[1][0] in ['s', 'c']:
+        print(first, second)
+    
 
 if __name__ == "__main__":
     main()
