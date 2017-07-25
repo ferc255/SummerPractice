@@ -7,9 +7,12 @@ STRING = int(1e15)
 
 def read(table, attributes):
     attributes[:] = input().split()
-    input()
+    class_col = input()
     for line in sys.stdin:
         table.append(line.replace(',', ' ').split());
+        if class_col.isnumeric():
+            table[-1][int(class_col)], table[-1][-1] = \
+                                  table[-1][-1], table[-1][int(class_col)]
 
 
 def entropy(lot, total):
@@ -223,8 +226,10 @@ def print_results(node, tree):
 def calc_used_attributes(node, attributes):
     result = set([])
     for item in node:
-        if item.split()[0] in attributes:
-            result.add(item)
+        node_name = item.split()[0]
+        if node_name in attributes:
+            result.add(node_name)
+    print(result)
     return len(result)
         
         
